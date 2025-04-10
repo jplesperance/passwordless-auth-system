@@ -28,5 +28,18 @@ func Init() *gorm.DB {
 	}
 
 	log.Println("Connected to database")
+
+	db.AutoMigrate(&User{})
+
+	email := "testuser@gmail.com"
+	var user User
+	result := db.Where("email = ?", email).First(&user)
+	if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+		user = User{Email: &email}
+		db.Create(&user)
+		log.Println("Test user created successfully")
+	} else {
+		log.Println("Test user already exists")
+	}
 	return db
 }
