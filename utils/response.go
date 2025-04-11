@@ -14,7 +14,7 @@ func (e HttpResponse) Error() string {
 	return fmt.Sprintf("description: %s", e.Message)
 }
 
-func NewHttpResponse(statusCode int, message string, data interface{}) *HttpResponse {
+func NewHttpResponse(statusCode int, message string, data interface{}) HttpResponse {
 	return HttpResponse{
 		Message:    message,
 		Data:       data,
