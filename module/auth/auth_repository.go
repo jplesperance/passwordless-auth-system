@@ -1,7 +1,10 @@
 package auth
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/jplesperance/passwordless-auth-system/db"
 	"github.com/jplesperance/passwordless-auth-system/utils"
@@ -16,13 +19,11 @@ type AuthRepository struct {
 
 type IAuthRepository interface {
 	FindFirstUserByEmail(email string) (*db.User, error)
+	StoreEmailLoginVerificationSessionToRedis(userId uint, token string) error
 }
 
-func NewAuthRepository(db *gorm.DB, rdb *redis.Client) IAuthRepository {
-	return &AuthRepository{
-		db:  db,
-		rdb: rdb,
-	}
+func NewAuthRepository(db *gorm.DB, rdb *redis.Client) *AuthRepository {
+	return &AuthRepository{db, rdb}
 }
 
 func (AuthRepository *AuthRepository) FindFirstUserByEmail(email string) (db.User, error) {
@@ -37,4 +38,16 @@ func (AuthRepository *AuthRepository) FindFirstUserByEmail(email string) (db.Use
 	}
 
 	return user, nil
+}
+
+func (authRepository *AuthRepository) StoreEmailLoginVerificationSessionToRedis(userId uint, token string) error {
+	ctx := context.Background()
+
+	key := fmt.Sprintf("login_attempt_%v:%v", userId, token)
+
+	err := authRepository.rdb.Set(ctx, key, "unverified", time.Minute*15).Err()
+	if err != nil {
+		return utils.NewHttpResponse(500, "Unknown error", err)
+	}
+	return nil
 }
